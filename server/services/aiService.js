@@ -23,8 +23,18 @@ const aiService = {
      */
     extractTextFromPDF: async (buffer) => {
         try {
-            const data = await pdf(buffer);
-            const text = data.text || '';
+            let text = '';
+            if (typeof pdf === 'function') {
+                const data = await pdf(buffer);
+                text = data.text || '';
+            } else if (pdf && pdf.PDFParse) {
+                const p = new pdf.PDFParse({ data: buffer });
+                await p.load();
+                const data = await p.getText();
+                text = data.text || '';
+            } else {
+                throw new Error('Unsupported pdf-parse module format');
+            }
             logger.info(`[AI_SERVICE] PDF Parsed. Raw Length: ${text.length || 0}`);
 
             if (text.trim().length < 50) {

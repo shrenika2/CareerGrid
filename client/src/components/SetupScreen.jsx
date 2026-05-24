@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Briefcase, FileUp, Sparkles, ChevronLeft, Loader2, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SetupScreen = ({ onSetupComplete }) => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [jd, setJd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +36,7 @@ const SetupScreen = ({ onSetupComplete }) => {
       const data = await response.json();
       
       if (data.session_id) {
-        onSetupComplete(data.session_id); // Pass session ID back to parent to route to MockInterviewer
+        onSetupComplete(data.session_id);
       } else {
         alert('Failed to initialize session.');
       }
@@ -45,49 +49,99 @@ const SetupScreen = ({ onSetupComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-xl w-full border border-slate-100">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2 text-center">Interview Setup</h1>
-        <p className="text-slate-500 text-center mb-8">Provide your details to tailor the AI questions.</p>
+    <div className="min-h-screen bg-[#020617] text-slate-300 pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
+      <button
+        onClick={() => navigate('/student/dashboard')}
+        className="flex items-center gap-2 text-slate-400 hover:text-white mb-8 group transition-colors"
+        type="button"
+      >
+        <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        Back to Dashboard
+      </button>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-8 md:p-12 relative overflow-hidden bg-slate-900/40 border-white/5"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex items-center gap-3 text-primary-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+          <Sparkles className="w-4 h-4 animate-pulse" />
+          Neural Session Calibration
+        </div>
+
+        <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">AI Interview Setup</h1>
+        <p className="text-slate-400 mb-8 font-medium text-sm">
+          Upload your resume and provide a target job description to configure the local AI interview questions.
+        </p>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Resume (PDF)</label>
-            <input 
-              type="file" 
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-slate-500
-                file:mr-4 file:py-3 file:px-4
-                file:rounded-lg file:border-0
-                file:text-sm file:font-semibold
-                file:bg-indigo-50 file:text-indigo-700
-                hover:file:bg-indigo-100 cursor-pointer"
-            />
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">
+              Upload Resume (PDF Format)
+            </label>
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:border-primary-500/50 hover:bg-white/5 transition-all group relative bg-[#080808]">
+              {loading ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+              ) : (
+                <>
+                  <FileUp className="w-8 h-8 text-primary-500 mb-2 group-hover:scale-110 transition-transform" />
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                    {file ? file.name : 'Select Resume PDF'}
+                  </p>
+                </>
+              )}
+              <input 
+                type="file" 
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={loading}
+              />
+            </label>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Job Description</label>
-            <textarea 
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              rows="6"
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"
-              placeholder="Paste the target job description here..."
-            ></textarea>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">
+              Target Job Description
+            </label>
+            <div className="relative">
+              <Briefcase className="absolute left-4 top-4 w-5 h-5 text-slate-500" />
+              <textarea 
+                value={jd}
+                onChange={(e) => setJd(e.target.value)}
+                rows="6"
+                className="w-full bg-[#080808] border border-white/5 rounded-3xl p-4 pl-12 text-white focus:outline-none focus:border-primary-500/50 transition-all font-medium resize-none text-sm leading-relaxed"
+                placeholder="Paste the target job description details here..."
+                required
+              ></textarea>
+            </div>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            className={`w-full py-4 px-4 rounded-xl text-white font-bold text-lg transition-all ${
-              loading ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg'
-            }`}
-          >
-            {loading ? 'Preparing Context...' : 'Start Interview'}
-          </button>
+          <div className="pt-6 border-t border-white/5">
+            <button 
+              type="submit" 
+              disabled={loading || !file || !jd.trim()}
+              className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg text-sm uppercase tracking-widest ${
+                loading || !file || !jd.trim()
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
+                  : 'bg-primary-600 hover:bg-primary-500 text-white shadow-primary-600/20 active:scale-95'
+              }`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Preparing Context...
+                </>
+              ) : (
+                <>
+                  <Target className="w-5 h-5" /> Start Neural Interview
+                </>
+              )}
+            </button>
+          </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

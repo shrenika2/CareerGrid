@@ -74,6 +74,23 @@ const InterviewPipeline = () => {
         }
     };
 
+    const startLocalInterview = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const { data } = await API.post('/ai/setup-local-session', { opportunityId: selectedOppId });
+            if (data.success && data.session_id) {
+                navigate('/student/live-interview', { state: { sessionId: data.session_id } });
+            } else {
+                setError('Failed to configure local AI session.');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to sync with local AI backend.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const startInterview = () => {
         if (!socket) return setError('Relay link unavailable. Reconnecting...');
 
@@ -217,9 +234,17 @@ const InterviewPipeline = () => {
                                                 </button>
                                             ))}
                                         </div>
-                                        <button onClick={handleJobSelection} disabled={!selectedOppId || loading} className="w-full py-4 bg-primary-600 text-white rounded-2xl font-black uppercase tracking-widest transition-all hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Calculate Strategic Fit <ChevronRight className="w-5 h-5" /></>}
-                                        </button>
+                                         <button 
+                                             onClick={handleJobSelection} 
+                                             disabled={!selectedOppId || loading} 
+                                             className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                                 !selectedOppId || loading
+                                                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
+                                                     : 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20 active:scale-95'
+                                             }`}
+                                         >
+                                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Calculate Strategic Fit <ChevronRight className="w-5 h-5" /></>}
+                                         </button>
                                     </div>
                                 )}
 
@@ -235,14 +260,38 @@ const InterviewPipeline = () => {
                                                 <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Fit Score</span>
                                             </div>
                                         </div>
-                                        <h2 className="text-4xl font-black text-white mb-10 uppercase italic">Calibration Success</h2>
-                                        <div className="flex gap-4">
-                                            <button onClick={() => setStep(2)} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest border border-white/5">Re-Target</button>
-                                            <button onClick={startInterview} className="flex-2 py-4 px-12 bg-primary-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary-600/30 hover:bg-primary-700 flex items-center justify-center gap-3">
-                                                <Mic className="w-5 h-5" /> Initiate Neural Eval
-                                            </button>
-                                        </div>
-                                    </div>
+                                         <h2 className="text-4xl font-black text-white mb-10 uppercase italic">Calibration Success</h2>
+                                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-2xl mx-auto">
+                                             <button 
+                                                 onClick={() => setStep(2)} 
+                                                 className="w-full sm:w-auto px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest border border-white/5 hover:bg-slate-800 transition-colors"
+                                             >
+                                                 Re-Target
+                                             </button>
+                                             
+                                             <button 
+                                                 onClick={startInterview} 
+                                                 disabled={loading}
+                                                 className="w-full sm:flex-1 py-4 px-6 bg-[#030712] border border-primary-500/30 hover:border-primary-500 text-primary-400 hover:text-white rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/5"
+                                             >
+                                                 <Mic className="w-4 h-4 text-primary-500" /> Premium Voice Eval
+                                             </button>
+
+                                             <button 
+                                                 onClick={startLocalInterview} 
+                                                 disabled={loading}
+                                                 className="w-full sm:flex-1 py-4 px-6 bg-primary-600 hover:bg-primary-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary-600/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                             >
+                                                 {loading ? (
+                                                     <Loader2 className="w-4 h-4 animate-spin" />
+                                                 ) : (
+                                                     <>
+                                                         <Zap className="w-4 h-4" /> Local Voice Eval (Ollama)
+                                                     </>
+                                                 )}
+                                             </button>
+                                         </div>
+                                     </div>
                                 )}
 
                                 {step === 4 && (
@@ -281,9 +330,17 @@ const InterviewPipeline = () => {
                             </div>
 
                             {error && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500">
-                                    <AlertCircle className="w-5 h-5" />
-                                    <p className="text-xs font-black uppercase tracking-widest">{error}</p>
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 text-red-500">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                        <p className="text-xs font-black uppercase tracking-widest">{error}</p>
+                                    </div>
+                                    <button 
+                                        onClick={startLocalInterview}
+                                        className="px-6 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/30 hover:border-red-500/50 transition-all cursor-pointer whitespace-nowrap self-start md:self-auto"
+                                    >
+                                        Use Local Ollama Voice Eval
+                                    </button>
                                 </motion.div>
                             )}
                         </motion.div>

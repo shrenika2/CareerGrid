@@ -16,8 +16,9 @@ export const NotificationProvider = ({ children }) => {
         setLoading(true);
         try {
             const { data } = await API.get('/notifications');
-            setNotifications(data);
-            setUnreadCount(data.filter(n => !n.isRead).length);
+            const list = data.notifications || (Array.isArray(data) ? data : []);
+            setNotifications(list);
+            setUnreadCount(data.unreadCount !== undefined ? data.unreadCount : list.filter(n => !n.read).length);
         } catch (err) {
             console.error('Failed to fetch notifications', err);
         } finally {
@@ -80,8 +81,8 @@ export const NotificationProvider = ({ children }) => {
 
     const markAsRead = async (id) => {
         try {
-            await API.put(`/notifications/${id}/read`);
-            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+            await API.patch(`/notifications/${id}/read`);
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
             console.error('Failed to mark notification as read', err);
@@ -90,8 +91,8 @@ export const NotificationProvider = ({ children }) => {
 
     const markAllAsRead = async () => {
         try {
-            await API.put(`/notifications/mark-all-read`);
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            await API.patch(`/notifications/acknowledge-all`);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
         } catch (err) {
             console.error('Failed to mark all as read', err);

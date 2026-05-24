@@ -120,7 +120,7 @@ const PracticeArena = () => {
 
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/student/mock-interview/setup')}
+                            onClick={() => navigate('/student/interview-pipeline')}
                             className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-600/10 hover:bg-primary-600 text-primary-500 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-primary-500/20"
                         >
                             <BrainCircuit className="w-4 h-4" /> Start AI Mock Interview

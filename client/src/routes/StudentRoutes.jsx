@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import StudentNavbar from '../components/navbars/StudentNavbar';
 
 import StudentDashboard from '../pages/StudentDashboard';
@@ -37,7 +37,8 @@ const StudentLayout = () => (
 
 // New Wrapper Component for the Real-Time Interview Feature
 const LiveInterviewContainer = () => {
-    const [sessionId, setSessionId] = useState(null);
+    const location = useLocation();
+    const [sessionId, setSessionId] = useState(location.state?.sessionId || null);
 
     if (!sessionId) {
         return <SetupScreen onSetupComplete={setSessionId} />;
