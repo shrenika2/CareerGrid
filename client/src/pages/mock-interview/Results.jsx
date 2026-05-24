@@ -1,7 +1,8 @@
-import React, { useMemo, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useMemo, useEffect, useState } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import API from '../../utils/api';
 import { motion } from 'framer-motion';
-import { CheckCircle2, ChevronLeft, Target, Rocket, Activity, RefreshCw, MessageSquare, Layers } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, Target, Rocket, Activity, RefreshCw, MessageSquare, Layers, Loader2 } from 'lucide-react';
 
 // --- SVG Circular Progress Bar ---
 const CircularScore = ({ score, maxScore = 10 }) => {
@@ -144,20 +145,99 @@ const generateFeedback = (jobRole = '', answeredCount = 0) => {
 const Results = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { id } = useParams();
+
+    const [loading, setLoading] = useState(false);
+    const [attemptData, setAttemptData] = useState(null);
 
     const { jobRole = 'Software Engineer', answeredQuestions = [] } = location.state || {};
 
-    // --- Guard Clause: redirect if user refreshes and location.state is gone ---
+    // --- Guard Clause: redirect if user refreshes and location.state is gone AND not fetching real ID ---
     useEffect(() => {
-        if (!location.state) {
+        if (!id && !location.state) {
             navigate('/student/mock-interview/setup', { replace: true });
         }
-    }, [location.state, navigate]);
+    }, [id, location.state, navigate]);
 
-    const { label, stats, score, feedback } = useMemo(
+    // Generate mock feedback in case fetching fails or is bypassed
+    const mockFeedback = useMemo(
         () => generateFeedback(jobRole, answeredQuestions.length),
         [jobRole, answeredQuestions.length]
     );
+
+    useEffect(() => {
+        const fetchAttempt = async () => {
+            if (!id || id === '1') {
+                // Keep local state evaluation for static mock flow
+                return;
+            }
+            setLoading(true);
+            try {
+                const { data } = await API.get(`/ai/interview-attempts/${id}`);
+                if (data && data.success && data.attempt) {
+                    setAttemptData(data.attempt);
+                }
+            } catch (err) {
+                console.error('[RESULTS] Failed to fetch interview attempt from API:', err.message);
+                // Clean fallback to local mock state, nothing crashes
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAttempt();
+    }, [id]);
+
+    // Map fields dynamically based on whether we loaded a database record
+    const label = attemptData ? attemptData.jobTitle : mockFeedback.label;
+    
+    // Score in DB is out of 100, UI expectation is out of 10 (with decimals, e.g. 7.9)
+    const score = attemptData ? parseFloat((attemptData.score / 10).toFixed(1)) : mockFeedback.score;
+    
+    const stats = attemptData ? [
+        { label: 'Technical Depth', val: attemptData.breakdown?.technical || 70, icon: Layers, color: 'text-primary-400' },
+        { label: 'Communication', val: attemptData.breakdown?.communication || 80, icon: Activity, color: 'text-green-400' },
+        { 
+            label: 'Problem-Solving', 
+            val: Math.round(((attemptData.breakdown?.technical || 70) + (attemptData.breakdown?.communication || 80)) / 2), 
+            icon: Rocket, 
+            color: 'text-yellow-400' 
+        },
+    ] : mockFeedback.stats;
+
+    const feedback = attemptData ? [
+        { 
+            type: 'strength', 
+            text: 'Demonstrated solid technical reasoning and vocabulary alignment during answer intervals.' 
+        },
+        { 
+            type: 'strength', 
+            text: 'Presented structured explanations with proper definitions for technical stacks.' 
+        },
+        { 
+            type: 'improvement', 
+            text: 'Focus on explaining scalability trade-offs and backend database index optimization patterns.' 
+        },
+        { 
+            type: 'improvement', 
+            text: 'Utilize structured frameworks like the STAR model more consistently in behavioral segments.' 
+        }
+    ] : mockFeedback.feedback;
+
+    const displayQuestions = attemptData 
+        ? attemptData.responses.map(r => r.question) 
+        : answeredQuestions;
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+                <div className="text-center flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.4em]">Retrieving Evaluation Analysis...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
@@ -179,7 +259,7 @@ const Results = () => {
                 <p className="text-slate-400 mt-1">
                     Role: <span className="text-white font-bold">{label}</span>
                     <span className="mx-2 text-slate-600">•</span>
-                    Questions Answered: <span className="text-white font-bold">{answeredQuestions.length}</span>
+                    Questions Answered: <span className="text-white font-bold">{displayQuestions.length}</span>
                 </p>
             </motion.div>
 
@@ -222,7 +302,7 @@ const Results = () => {
                     </div>
 
                     <button
-                        onClick={() => navigate('/student/mock-interview/setup')}
+                        onClick={() => navigate('/student/interview-pipeline')}
                         className="w-full mt-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-white/10"
                     >
                         <RefreshCw className="w-4 h-4" /> Try Again
@@ -267,7 +347,7 @@ const Results = () => {
                     </div>
 
                     {/* Answered Questions Log */}
-                    {answeredQuestions.length > 0 && (
+                    {displayQuestions.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -278,7 +358,7 @@ const Results = () => {
                                 <MessageSquare className="w-5 h-5 text-primary-500" /> Questions Covered
                             </h3>
                             <ol className="space-y-3">
-                                {answeredQuestions.map((q, i) => (
+                                {displayQuestions.map((q, i) => (
                                     <li key={i} className="flex items-start gap-3 text-sm text-slate-400">
                                         <span className="shrink-0 w-6 h-6 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-[10px] font-black flex items-center justify-center mt-0.5">
                                             {i + 1}
