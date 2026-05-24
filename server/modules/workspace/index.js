@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router(); // Explicitly creating router
-// const workspaceRoutes = require('./routes/workspaceRoutes');
+const { protect } = require('../../middleware/authMiddleware');
+
+router.use(protect);
 
 // Correctly mount routes
 const channelRoutes = require('./routes/channelRoutes');

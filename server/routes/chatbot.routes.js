@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const chatbotController = require('../controllers/chatbot.controller');
+const { protect } = require('../middleware/authMiddleware');
+
+router.use(protect);
 
 /**
  * @route   POST /api/chatbot/chat
  * @desc    Send a message and get a streaming response
- * @access  Public (Add your auth middleware here if needed)
+ * @access  Private
  */
 router.post('/chat', chatbotController.handleChat);
 

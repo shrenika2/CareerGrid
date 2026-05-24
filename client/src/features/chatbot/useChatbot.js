@@ -54,10 +54,23 @@ export const useChatbot = () => {
         const assistantMessageId = Date.now() + 1;
         let fullAssistantContent = "";
 
+        const headers = { 'Content-Type': 'application/json' };
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+            try {
+                const { token } = JSON.parse(userInfo);
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (e) {
+                console.error('Failed to parse token for chatbot', e);
+            }
+        }
+
         try {
             const response = await fetch('/api/chatbot/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ message: userInput, chatId })
             });
 

@@ -5,8 +5,9 @@ const User = require('./models/User');
 const initSocket = (server) => {
     const io = socketio(server, {
         cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
+            origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+            methods: ["GET", "POST"],
+            credentials: true
         },
         pingTimeout: 60000, // Wait 60s for pong before closing
         pingInterval: 25000, // Ping every 25s
@@ -57,13 +58,25 @@ const initSocket = (server) => {
         // Join personal room for private notifications
         socket.join(socket.user._id.toString());
 
-        // Community rooms
-        socket.on('join_room', (communityId) => {
-            socket.join(communityId);
+        // Community and notification rooms
+        socket.on('join_room', (data) => {
+            if (typeof data === 'string') {
+                socket.join(data);
+            } else if (data && data.room) {
+                socket.join(data.room);
+            } else if (data && data.communityId) {
+                socket.join(data.communityId);
+            }
         });
 
-        socket.on('leave_room', (communityId) => {
-            socket.leave(communityId);
+        socket.on('leave_room', (data) => {
+            if (typeof data === 'string') {
+                socket.leave(data);
+            } else if (data && data.room) {
+                socket.leave(data.room);
+            } else if (data && data.communityId) {
+                socket.leave(data.communityId);
+            }
         });
 
         // Opportunity rooms for real-time practice updates

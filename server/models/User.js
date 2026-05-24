@@ -86,7 +86,16 @@ const userSchema = mongoose.Schema(
             isComplete: {
                 type: Boolean,
                 default: false,
-            }
+            },
+            readinessHistory: [
+                {
+                    score: Number,
+                    date: {
+                        type: Date,
+                        default: Date.now
+                    }
+                }
+            ]
         },
 
         // Company specific
@@ -108,6 +117,22 @@ const userSchema = mongoose.Schema(
         timestamps: true,
     }
 );
+
+// Add virtual field to schema for admin creation secret verification
+userSchema.virtual('adminSecret')
+    .get(function() { return this._adminSecret; })
+    .set(function(value) { this._adminSecret = value; });
+
+// Pre-validate hook to restrict admin creation/update unless a specific system secret matches
+userSchema.pre('validate', function(next) {
+    if (this.isModified('role') && this.role === 'admin') {
+        const secret = process.env.ADMIN_CREATION_SECRET || 'super_secret_admin_creation_token_98765';
+        if (this.adminSecret !== secret && this._adminSecret !== secret) {
+            this.invalidate('role', 'Admin registration is restricted. A valid adminSecret must be provided.');
+        }
+    }
+    next();
+});
 
 // Encrypt password using bcrypt and calculate profile completeness
 userSchema.pre('save', async function (next) {
