@@ -8,6 +8,7 @@ import {
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 const DashboardOverview = () => {
     const { socket, user } = useAuth();
@@ -15,19 +16,79 @@ const DashboardOverview = () => {
     const [applications, setApplications] = useState([]);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [readinessDataList, setReadinessDataList] = useState([]);
 
     const fetchDashboardData = async () => {
         try {
-            const [metricsRes, appsRes, profileRes] = await Promise.all([
-                API.get('/student/metrics'),
-                API.get('/opportunities/my-applications'),
+            let metricsData = null;
+            let fetchedReadiness = [];
+
+            // Fire a GET request to /api/students/metrics
+            try {
+                const metricsRes = await API.get('/students/metrics');
+                metricsData = metricsRes.data;
+                if (metricsData && Array.isArray(metricsData.readinessData) && metricsData.readinessData.length > 0) {
+                    fetchedReadiness = metricsData.readinessData;
+                }
+            } catch (err) {
+                console.error("Failed to fetch /api/students/metrics, attempting fallback", err);
+                try {
+                    const metricsRes = await API.get('/student/metrics');
+                    metricsData = metricsRes.data;
+                    if (metricsData && Array.isArray(metricsData.readinessData) && metricsData.readinessData.length > 0) {
+                        fetchedReadiness = metricsData.readinessData;
+                    }
+                } catch (fallbackErr) {
+                    console.error("Fallback /api/student/metrics also failed", fallbackErr);
+                }
+            }
+
+            // If empty or network returns error, cleanly inject a 5-day mock timeline curve configuration array
+            if (fetchedReadiness.length === 0) {
+                fetchedReadiness = [
+                    { name: 'Day 1', score: 30 },
+                    { name: 'Day 2', score: 45 },
+                    { name: 'Day 3', score: 60 },
+                    { name: 'Day 4', score: 75 },
+                    { name: 'Day 5', score: 90 }
+                ];
+            }
+
+            setReadinessDataList(fetchedReadiness);
+
+            const [appsRes, profileRes] = await Promise.all([
+                API.get('/opportunities/my-applications').catch(() => ({ data: [] })),
                 API.get('/student-profile/me').catch(() => ({ data: null }))
             ]);
-            setMetrics(metricsRes.data || null);
+
             setApplications(appsRes.data || []);
             setProfile(profileRes.data || null);
+
+            if (metricsData) {
+                setMetrics({
+                    ...metricsData,
+                    readinessData: fetchedReadiness
+                });
+            } else {
+                setMetrics({
+                    readinessData: fetchedReadiness,
+                    upcomingDeadlines: [],
+                    insights: [
+                        { text: "Complete your mock interview to sync real-time trajectory metrics.", action: "Start Interview", type: "info" }
+                    ]
+                });
+            }
         } catch (err) {
             console.error("Dashboard Sync Failed", err);
+            if (fetchedReadiness.length === 0) {
+                setReadinessDataList([
+                    { name: 'Day 1', score: 30 },
+                    { name: 'Day 2', score: 45 },
+                    { name: 'Day 3', score: 60 },
+                    { name: 'Day 4', score: 75 },
+                    { name: 'Day 5', score: 90 }
+                ]);
+            }
         } finally {
             setLoading(false);
         }
@@ -38,7 +99,31 @@ const DashboardOverview = () => {
     }, []);
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !user?._id) return;
+
+        // Emit a join_room room targeting descriptor using student's unique logged-in context ID string
+        socket.emit('join_room', { room: `user_${user._id}` });
+
+        const handleMetricsUpdate = (data) => {
+            console.log('[DashboardOverview] Received metrics_update:', data);
+            toast.success("Readiness score synchronized!", {
+                icon: '📈',
+                style: {
+                    borderRadius: '10px',
+                    background: '#1e293b',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }
+            });
+
+            // Update graph's React state array immediately
+            const currentDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
+            setReadinessDataList(prev => {
+                return [...prev, { name: currentDay, score: data.newScore }];
+            });
+        };
+
+        socket.on('metrics_update', handleMetricsUpdate);
 
         socket.on('notification:new', (notif) => {
             if (notif.type === 'application') {
@@ -53,12 +138,13 @@ const DashboardOverview = () => {
         });
 
         return () => {
+            socket.off('metrics_update', handleMetricsUpdate);
             socket.off('notification:new');
             socket.off('profile:updated');
         };
     }, [socket, user?._id]);
 
-    const readinessData = metrics?.readinessData || [
+    const readinessData = readinessDataList.length > 0 ? readinessDataList : (metrics?.readinessData || [
         { name: 'Sun', score: 0 },
         { name: 'Mon', score: 0 },
         { name: 'Tue', score: 0 },
@@ -66,7 +152,7 @@ const DashboardOverview = () => {
         { name: 'Thu', score: 0 },
         { name: 'Fri', score: 0 },
         { name: 'Sat', score: 0 },
-    ];
+    ]);
 
     if (loading) return (
         <div className="min-h-[400px] flex flex-col items-center justify-center gap-6">

@@ -55,6 +55,8 @@ const allowedOrigins = [
     env.FRONTEND_URL,          // Render production URL (set in Render env vars)
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    `http://localhost:${env.PORT || 5000}`,
+    `http://127.0.0.1:${env.PORT || 5000}`,
 ].filter(Boolean); // Remove undefined/null entries
 
 app.use(
@@ -95,6 +97,10 @@ app.use('/uploads', express.static('uploads'));
 
 // Request ID & Logging Middleware
 app.use((req, res, next) => {
+    // Skip logging for healthcheck endpoint to prevent log flooding
+    if (req.originalUrl === '/api/health') {
+        return next();
+    }
     req.id = uuidv4();
     logger.http(`[${req.id}] INCOMING: ${req.method} ${req.originalUrl}`);
     const start = Date.now();
@@ -108,9 +114,24 @@ app.use((req, res, next) => {
 // Logging in development
 if (env.NODE_ENV === 'development') {
     app.use(morgan('combined', {
+        skip: (req) => req.originalUrl === '/api/health',
         stream: { write: (message) => logger.http(message.trim()) }
     }));
 }
+
+// Healthcheck endpoint
+app.get('/api/health', async (req, res) => {
+    try {
+        const mongoose = require('mongoose');
+        const dbStatus = mongoose.connection.readyState === 1 ? 'UP' : 'DOWN';
+        if (dbStatus === 'DOWN') {
+            return res.status(503).json({ status: 'DOWN', database: 'DISCONNECTED', timestamp: new Date() });
+        }
+        res.status(200).json({ status: 'UP', database: 'CONNECTED', timestamp: new Date() });
+    } catch (err) {
+        res.status(500).json({ status: 'DOWN', error: err.message, timestamp: new Date() });
+    }
+});
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -125,6 +146,7 @@ app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/teams', require('./routes/teamRoutes'));
 app.use('/api/student-profile', require('./routes/studentProfileRoutes'));
 app.use('/api/experience', require('./routes/experienceRoutes'));
