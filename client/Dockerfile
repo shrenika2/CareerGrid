@@ -12,19 +12,11 @@ RUN npm run build
 # Stage 2: Serve the application using NGINX
 FROM nginx:alpine
 
+# Copy custom NGINX configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy built assets from the build stage
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Provide a custom NGINX configuration for routing
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,15 +1,13 @@
-FROM node:18-alpine
-
-# Set working directory
+# Stage 1: Install production dependencies
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copy package.json and package-lock.json first to leverage Docker cache
 COPY package*.json ./
+RUN npm install --omit=dev
 
-# Install dependencies (only production dependencies can be installed using `npm ci --only=production` if tests aren't needed, but `npm install` is fine for now)
-RUN npm install
-
-# Copy the rest of the application
+# Stage 2: Clean production runtime
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 
 # Expose the port the app runs on
