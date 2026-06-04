@@ -24,7 +24,8 @@ const seedAdmin = async () => {
             password: adminPassword,
             role: 'admin',
             status: 'approved',
-            isVerified: true
+            isVerified: true,
+            adminSecret: process.env.ADMIN_CREATION_SECRET || 'super_secret_admin_creation_token_98765'
         });
 
         logger.info('[SEED] Admin seeded successfully');
