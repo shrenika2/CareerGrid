@@ -1,6 +1,7 @@
 const { ChatOllama } = require('@langchain/ollama');
 const { ChatPromptTemplate } = require('@langchain/core/prompts');
 const { StringOutputParser } = require('@langchain/core/output_parsers');
+const OpenAI = require('openai');
 
 /**
  * LLMService handles the interaction with the local Ollama instance.
@@ -35,6 +36,41 @@ Guidelines:
      * @returns {AsyncGenerator<string>} - Generator yielding text chunks
      */
     async *streamAnswer(message, history = []) {
+        // Fallback to OpenAI if API key is provided
+        if (process.env.OPENAI_API_KEY) {
+            try {
+                console.log(`LLMService: Streaming answer via OpenAI for input: "${message.substring(0, 50)}..."`);
+                const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                
+                // Format history into Chat Completion format: { role: 'user' | 'assistant', content: string }
+                const messages = [
+                    { role: 'system', content: this.systemPrompt },
+                    ...history.map((msg, index) => ({
+                        role: index % 2 === 0 ? 'user' : 'assistant',
+                        content: msg
+                    })),
+                    { role: 'user', content: message }
+                ];
+
+                const stream = await openai.chat.completions.create({
+                    model: 'gpt-4o-mini', // Fast and cheap model
+                    messages: messages,
+                    stream: true,
+                    temperature: 0.2
+                });
+
+                for await (const chunk of stream) {
+                    const content = chunk.choices[0]?.delta?.content || "";
+                    if (content) {
+                        yield content;
+                    }
+                }
+                return; // Exit generator successfully
+            } catch (openaiError) {
+                console.error('OpenAI Chat Stream Error:', openaiError);
+            }
+        }
+
         const chain = this.createChain(history);
         try {
             console.log(`LLMService: Streaming answer for input: "${message.substring(0, 50)}..."`);

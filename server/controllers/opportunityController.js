@@ -109,9 +109,9 @@ const applyForOpportunity = asyncHandler(async (req, res) => {
 
     // 1. Fetch persistent resume data from User Model
     const user = await User.findById(req.user._id);
-    const studentProfile = user.studentProfile;
+    const studentProfile = user?.studentProfile;
 
-    if (!studentProfile.resumeFileUrl) {
+    if (!studentProfile || !studentProfile.resumeFileUrl) {
         res.status(400);
         throw new Error('No resume found on profile. Please upload your resume in the Student Profile section first.');
     }
