@@ -21,7 +21,8 @@ const createOpportunity = asyncHandler(async (req, res) => {
         location,
         stipend,
         duration,
-        facultyApprovalRequired
+        facultyApprovalRequired,
+        branch
     } = req.body;
 
     // Logic: If faculty approval is required, status is 'pending_faculty'. Otherwise 'open'.
@@ -39,7 +40,8 @@ const createOpportunity = asyncHandler(async (req, res) => {
         stipend,
         duration,
         status,
-        facultyApprovalRequired: !!facultyApprovalRequired
+        facultyApprovalRequired: !!facultyApprovalRequired,
+        branch
     });
 
     logAction({
