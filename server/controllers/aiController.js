@@ -154,7 +154,7 @@ const setupLocalSession = asyncHandler(async (req, res) => {
 
     // 4. Post to FastAPI server to setup the interview session
     try {
-        const fastapiUrl = process.env.VITE_AI_API_URL || 'http://localhost:8000';
+        const fastapiUrl = process.env.AI_API_URL || process.env.VITE_AI_API_URL || 'http://localhost:8000';
         const response = await axios.post(`${fastapiUrl}/api/setup-interview-text`, {
             resume_text: resumeText,
             job_description: jobDescription

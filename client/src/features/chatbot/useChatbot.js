@@ -68,7 +68,8 @@ export const useChatbot = () => {
         }
 
         try {
-            const response = await fetch('/api/chatbot/chat', {
+            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${apiBaseUrl}/chatbot/chat`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ message: userInput, chatId })
