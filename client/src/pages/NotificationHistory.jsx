@@ -68,7 +68,7 @@ const NotificationHistory = () => {
                     setNotifications(prev => (prev || []).map(n => ({ ...n, read: true })));
                     toast.success(response.data.message || 'All signals acknowledged');
                 } else {
-                    toast.info('No pending signals found to acknowledge.');
+                    toast('No pending signals found to acknowledge.', { icon: 'ℹ️' });
                 }
             }
         } catch (err) {

@@ -62,9 +62,13 @@ export const NotificationProvider = ({ children }) => {
         };
 
         const handleOpportunityUpdate = (data) => {
-            toast.info(`Opportunity Update: ${data.title}`, {
-                description: `Status changed to ${data.status}`,
-            });
+            toast(
+                <div>
+                    <strong>Opportunity Update: {data.title}</strong>
+                    <div className="text-xs opacity-80 mt-1">Status changed to {data.status}</div>
+                </div>,
+                { icon: 'ℹ️' }
+            );
             // We could also trigger a refresh of the opportunities list if we had a shared search context
         };
 
