@@ -49,7 +49,11 @@ const MockInterviewer = ({ sessionId, jobTitle = "AI Voice Interview" }) => {
     }, 1000);
 
     // 2. Initialize WebSocket
-    wsRef.current = new WebSocket(`ws://localhost:8000/ws/interview/${sessionId}`);
+    const aiApiUrl = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+    const wsBaseUrl = aiApiUrl.replace(/^http/, 'ws');
+    const cleanBaseUrl = wsBaseUrl.endsWith('/') ? wsBaseUrl.slice(0, -1) : wsBaseUrl;
+    const wsUrl = `${cleanBaseUrl}/ws/interview/${sessionId}`;
+    wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onmessage = (event) => {
       const token = event.data;
