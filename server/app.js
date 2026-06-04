@@ -14,6 +14,9 @@ const initSocket = require('./socket');
 
 const app = express();
 
+// Trust proxy settings for accurate client IP tracking behind reverse proxies (Hugging Face / Render)
+app.set('trust proxy', 1);
+
 // Initialize Sentry
 if (env.SENTRY_DSN && env.NODE_ENV !== 'test') {
     Sentry.init({
