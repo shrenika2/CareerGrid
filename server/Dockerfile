@@ -10,8 +10,11 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 
+# Set Hugging Face port environment variable
+ENV PORT=7860
+
 # Expose the port the app runs on
-EXPOSE 5000
+EXPOSE 7860
 
 # Start the server
 CMD ["node", "server.js"]

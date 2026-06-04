@@ -20,9 +20,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 8000
+EXPOSE 7860
+
+# Set Hugging Face port environment variable
+ENV PORT=7860
 
 # Run uvicorn server
-# Cloud Run expects the container to listen on the port defined by the PORT environment variable.
-# We set 8000 as default but allow it to be overridden.
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD uvicorn main:app --host 0.0.0.0 --port 7860
