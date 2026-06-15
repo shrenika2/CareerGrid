@@ -136,7 +136,7 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!user) {
         console.error(`[AUTH] Login failed: User not found for email ${email}`);
         res.status(401);
-        throw new Error('Authentication failed: User account not found');
+        throw new Error('Invalid email or password');
     }
 
     const isMatch = await user.matchPassword(password);
@@ -145,7 +145,7 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!isMatch) {
         console.error(`[AUTH] Login failed: Incorrect password for ${email}`);
         res.status(401);
-        throw new Error('Authentication failed: Incorrect password');
+        throw new Error('Invalid email or password');
     }
 
     if (user.isSuspended || user.status === 'blocked' || user.status === 'rejected') {

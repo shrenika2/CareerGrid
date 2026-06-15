@@ -14,6 +14,27 @@ jest.mock('uuid', () => ({
     v4: jest.fn().mockReturnValue('test-uuid-1234')
 }));
 
+// Mock LangChain and Ollama to prevent Jest ESM compilation issues with ansi-styles
+const mockPipe = jest.fn().mockReturnThis();
+jest.mock('@langchain/ollama', () => ({
+    ChatOllama: jest.fn().mockImplementation(() => ({
+        pipe: mockPipe,
+        stream: jest.fn().mockResolvedValue([])
+    }))
+}));
+
+jest.mock('@langchain/core/prompts', () => ({
+    ChatPromptTemplate: {
+        fromMessages: jest.fn().mockReturnValue({
+            pipe: mockPipe
+        })
+    }
+}));
+
+jest.mock('@langchain/core/output_parsers', () => ({
+    StringOutputParser: jest.fn().mockImplementation(() => ({}))
+}));
+
 // Mock Cloudinary
 jest.mock('cloudinary', () => ({
     v2: {

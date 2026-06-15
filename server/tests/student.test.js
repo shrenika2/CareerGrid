@@ -16,7 +16,14 @@ beforeAll(async () => {
             name: 'Profile User',
             email: 'profile@pict.edu',
             password: 'password123',
-            role: 'student'
+            role: 'student',
+            studentProfile: {
+                branch: 'Computer Science',
+                year: 3,
+                college: 'PICT',
+                cgpa: 8.5,
+                skills: ['React', 'Node']
+            }
         });
     token = res.body.token;
     userId = res.body._id;
@@ -30,6 +37,7 @@ describe('Student Profile API', () => {
         branch: 'Computer Science',
         year: 3,
         collegeId: '2021CS001',
+        college: 'PICT',
         resumeUrl: 'https://test.com/resume.pdf',
         skills: ['JavaScript', 'Node.js']
     };

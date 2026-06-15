@@ -12,12 +12,32 @@ beforeAll(async () => {
 
     // Students
     const s1 = await request(app).post('/api/auth/register').send({
-        name: 'Student 1', email: 's1@pict.edu', password: 'password123', role: 'student'
+        name: 'Student 1',
+        email: 's1@pict.edu',
+        password: 'password123',
+        role: 'student',
+        studentProfile: {
+            branch: 'Computer Science',
+            year: 3,
+            college: 'PICT',
+            cgpa: 8.5,
+            skills: ['React', 'Node']
+        }
     });
     student1Token = s1.body.token;
 
     const s2 = await request(app).post('/api/auth/register').send({
-        name: 'Student 2', email: 's2@pict.edu', password: 'password123', role: 'student'
+        name: 'Student 2',
+        email: 's2@pict.edu',
+        password: 'password123',
+        role: 'student',
+        studentProfile: {
+            branch: 'Computer Science',
+            year: 3,
+            college: 'PICT',
+            cgpa: 8.5,
+            skills: ['React', 'Node']
+        }
     });
     student2Token = s2.body.token;
 
@@ -27,7 +47,8 @@ beforeAll(async () => {
         description: 'Hard project',
         type: 'project',
         deadline: new Date(),
-        postedBy: new (require('mongoose').Types.ObjectId)()
+        postedBy: new (require('mongoose').Types.ObjectId)(),
+        branch: 'Computer Science'
     });
     oppId = opp._id;
 });

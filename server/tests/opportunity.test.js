@@ -15,7 +15,14 @@ beforeAll(async () => {
         name: 'Student User',
         email: 's@pict.edu',
         password: 'password123',
-        role: 'student'
+        role: 'student',
+        studentProfile: {
+            branch: 'Computer Science',
+            year: 3,
+            college: 'PICT',
+            cgpa: 8.5,
+            skills: ['React', 'Node']
+        }
     });
     studentToken = sRes.body.token;
 
@@ -47,7 +54,8 @@ describe('Opportunities API', () => {
                 type: 'internship',
                 deadline: '2026-12-31',
                 requiredSkills: ['React', 'Node'],
-                eligibilityCriteria: { minYear: 3, minCGPA: 8 }
+                eligibilityCriteria: { minYear: 3, minCGPA: 8 },
+                branch: 'Computer Science'
             });
 
         expect(res.statusCode).toBe(201);

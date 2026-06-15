@@ -13,7 +13,14 @@ describe('Authentication API', () => {
         name: 'Test Student',
         email: 'student@pict.edu',
         password: 'password123',
-        role: 'student'
+        role: 'student',
+        studentProfile: {
+            branch: 'Computer Science',
+            year: 3,
+            college: 'PICT',
+            cgpa: 8.5,
+            skills: ['React', 'Node']
+        }
     };
 
     describe('POST /api/auth/register', () => {
